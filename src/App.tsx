@@ -7,6 +7,9 @@ import flightAnimation from "./Assets/Animations/flight-animation.json";
 import { useTheme } from "./Context/ThemeContext";
 import { ComingSoon } from "./Components/ComingSoon";
 import { FlightDeals } from "./Components/FlightDeals";
+import { Toaster } from "./Components/Toaster";
+import { type Flight } from "./Services/flightService";
+import { FlightResults } from "./Components/FlightResults";
 
 type Section = "Explore" | "Flights" | "Hotels" | "Holiday Homes" | "Things to do";
 
@@ -14,6 +17,9 @@ function AppContent() {
 	const { theme } = useTheme();
 	const isDark = theme === "dark";
 	const [activeSection, setActiveSection] = useState<Section>("Flights");
+	const [flights, setFlights] = useState<Flight[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | undefined>();
 
 	return (
 		<div className={`min-h-screen pb-10 ${isDark ? "bg-[#1a1d24]" : "bg-gray-50"}`}>
@@ -45,7 +51,8 @@ function AppContent() {
 									} text-center mb-8`}>
 									Flights
 								</h1>
-								<FlightSearchForm />
+								<FlightSearchForm onSearch={setFlights} setIsLoading={setIsLoading} setError={setError} />
+								<FlightResults flights={flights} isLoading={isLoading} error={error} />
 								<FlightDeals />
 							</div>
 						</div>
@@ -64,6 +71,7 @@ function App() {
 	return (
 		<ThemeProvider>
 			<AppContent />
+			<Toaster />
 		</ThemeProvider>
 	);
 }

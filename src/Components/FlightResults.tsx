@@ -2,163 +2,135 @@ import React from "react";
 import { useTheme } from "../Context/ThemeContext";
 import { motion } from "framer-motion";
 import { ArrowRight, Info, Plane } from "lucide-react";
-
-interface Flight {
-	airline: {
-		name: string;
-		logo: string;
-	};
-	departure: {
-		time: string;
-		airport: string;
-	};
-	arrival: {
-		time: string;
-		airport: string;
-	};
-	duration: string;
-	stops: number;
-	price: number;
-	co2Emission: {
-		amount: number;
-		unit: string;
-		comparison: string;
-	};
-}
+import { type Flight } from "../Services/flightService";
 
 interface FlightResultsProps {
 	flights: Flight[];
-	isLoading?: boolean;
-	onSort?: (type: string) => void;
+	isLoading: boolean;
+	error?: string;
 }
 
-export function FlightResults({ flights, isLoading, onSort }: FlightResultsProps) {
+export const FlightResults: React.FC<FlightResultsProps> = ({ flights, isLoading, error }) => {
 	const { theme } = useTheme();
 	const isDark = theme === "dark";
 
 	if (isLoading) {
 		return (
-			<div className='mt-8 space-y-4'>
-				{[1, 2, 3].map((i) => (
-					<div key={i} className={`h-24 rounded-lg animate-pulse ${isDark ? "bg-[#1e2330]" : "bg-gray-100"}`} />
-				))}
+			<div className='mt-8'>
+				<div className='animate-pulse space-y-4'>
+					{[1, 2, 3].map((i) => (
+						<div key={i} className={`h-32 ${isDark ? "bg-gray-800" : "bg-gray-100"} rounded-lg`} />
+					))}
+				</div>
 			</div>
 		);
 	}
 
+	if (error) {
+		return (
+			<div className='mt-8'>
+				<div className={`p-4 rounded-lg ${isDark ? "bg-red-900/50 text-red-200" : "bg-red-50 text-red-500"}`}>
+					<p>{error}</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (!flights?.length) {
+		return (
+			<div className='mt-8'>
+				<div className={`p-4 rounded-lg ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-50 text-gray-600"}`}>
+					<p>No flights found. Try different search criteria.</p>
+				</div>
+			</div>
+		);
+	}
+
+	const formatTime = (dateString: string) => {
+		return new Date(dateString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	};
+
+	const formatDuration = (minutes: number) => {
+		const hours = Math.floor(minutes / 60);
+		const mins = minutes % 60;
+		return `${hours}h ${mins}m`;
+	};
+
 	return (
-		<div className='mt-8'>
-			{/* Filters and Sort */}
-			<div
-				className={`flex items-center gap-4 mb-4 overflow-x-auto pb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>All filters</span>
-				</button>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>Stops</span>
-				</button>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>Airlines</span>
-				</button>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>Times</span>
-				</button>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>Duration</span>
-				</button>
-				<button className='flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'>
-					<span>Emissions</span>
-				</button>
-			</div>
+		<div className='mt-8 space-y-4'>
+			{flights.map((flight) => (
+				<motion.div
+					key={flight.id}
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					className={`p-6 rounded-lg ${
+						isDark ? "bg-gray-800 hover:bg-gray-700" : "bg-white hover:bg-gray-50"
+					} shadow-lg transition-colors`}>
+					<div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-6'>
+						{/* Airline Info */}
+						<div className='flex items-center gap-4'>
+							{flight.legs[0].carriers.marketing[0].logoUrl && (
+								<img
+									src={flight.legs[0].carriers.marketing[0].logoUrl}
+									alt={flight.legs[0].carriers.marketing[0].name}
+									className='w-8 h-8 object-contain'
+								/>
+							)}
+							<span className={`font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+								{flight.legs[0].carriers.marketing[0].name}
+							</span>
+						</div>
 
-			{/* Best/Cheapest Tabs */}
-			<div className='grid grid-cols-2 gap-2 mb-6'>
-				<button
-					className={`p-4 rounded-lg text-center transition-colors ${
-						isDark ? "bg-[#1e2330] text-white hover:bg-[#252b3b]" : "bg-white text-gray-900 hover:bg-gray-50"
-					} shadow-sm`}>
-					<div className='text-lg font-semibold'>Best</div>
-					<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-						Based on price, duration, and stops
-					</div>
-				</button>
-				<button
-					className={`p-4 rounded-lg text-center transition-colors ${
-						isDark ? "bg-[#1e2330] text-white hover:bg-[#252b3b]" : "bg-white text-gray-900 hover:bg-gray-50"
-					} shadow-sm`}>
-					<div className='text-lg font-semibold'>Cheapest</div>
-					<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>Starting from $X,XXX</div>
-				</button>
-			</div>
-
-			{/* Flight Results */}
-			<div className='space-y-4'>
-				{flights.map((flight, index) => (
-					<motion.div
-						key={index}
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: index * 0.1 }}
-						className={`p-4 rounded-lg ${
-							isDark ? "bg-[#1e2330] hover:bg-[#252b3b]" : "bg-white hover:bg-gray-50"
-						} shadow-sm transition-colors cursor-pointer`}>
-						<div className='flex items-center justify-between flex-wrap gap-4'>
-							{/* Airline Info */}
-							<div className='flex items-center gap-3'>
-								<img src={flight.airline.logo} alt={flight.airline.name} className='w-8 h-8 object-contain' />
-								<div>
-									<div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{flight.airline.name}</div>
-									<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-										Flight operated by {flight.airline.name}
-									</div>
+						{/* Flight Times */}
+						<div className='flex items-center gap-6'>
+							<div className='text-center'>
+								<div className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+									{formatTime(flight.legs[0].departure)}
+								</div>
+								<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+									{flight.legs[0].origin.displayCode}
 								</div>
 							</div>
 
-							{/* Flight Times */}
-							<div className='flex items-center gap-4'>
-								<div className='text-center'>
-									<div className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-										{flight.departure.time}
-									</div>
-									<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-										{flight.departure.airport}
-									</div>
+							<div className='flex flex-col items-center min-w-[120px]'>
+								<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+									{formatDuration(flight.legs[0].durationInMinutes)}
 								</div>
-								<div className='flex flex-col items-center px-4'>
-									<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>{flight.duration}</div>
-									<div className='relative w-24 h-px bg-gray-300 my-2'>
-										<ArrowRight className='absolute -right-1 -top-2 w-4 h-4 text-gray-400' />
-									</div>
-									<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-										{flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}
-									</div>
+								<div className='relative w-full h-px bg-gray-300 my-2'>
+									<Plane className='absolute -top-2 -right-2 w-4 h-4 text-blue-500' />
 								</div>
-								<div className='text-center'>
-									<div className={`text-lg font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-										{flight.arrival.time}
-									</div>
-									<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-										{flight.arrival.airport}
-									</div>
+								<div className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+									{flight.legs[0].stopCount === 0
+										? "Direct"
+										: `${flight.legs[0].stopCount} stop${flight.legs[0].stopCount > 1 ? "s" : ""}`}
 								</div>
 							</div>
 
-							{/* Price and CO2 */}
-							<div className='flex flex-col items-end gap-2'>
-								<div className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-									${flight.price.toLocaleString()}
+							<div className='text-center'>
+								<div className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+									{formatTime(flight.legs[0].arrival)}
 								</div>
-								<div className='flex items-center gap-1 text-sm'>
-									<span className={isDark ? "text-green-400" : "text-green-600"}>
-										{flight.co2Emission.amount} {flight.co2Emission.unit}
-									</span>
-									<Info className='w-4 h-4 text-gray-400' />
+								<div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+									{flight.legs[0].destination.displayCode}
 								</div>
 							</div>
 						</div>
-					</motion.div>
-				))}
-			</div>
+
+						{/* Price */}
+						<div className='flex flex-col items-end gap-2'>
+							<div className={`text-2xl font-bold ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+								{flight.price.formatted}
+							</div>
+							{flight.tags?.includes("cheapest") && (
+								<div className='flex items-center gap-1 text-green-500 text-sm'>
+									<Info className='w-4 h-4' />
+									<span>Best price</span>
+								</div>
+							)}
+						</div>
+					</div>
+				</motion.div>
+			))}
 		</div>
 	);
-}
+};
