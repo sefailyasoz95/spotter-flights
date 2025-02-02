@@ -135,9 +135,26 @@ interface Airport {
 interface AirportSearchResponse {
 	status: boolean;
 	timestamp: number;
-	data: {
-		places: Airport[];
-	};
+	data: Array<{
+		skyId: string;
+		entityId: string;
+		presentation: {
+			title: string;
+			suggestionTitle: string;
+			subtitle: string;
+		};
+		navigation: {
+			entityId: string;
+			entityType: string;
+			localizedName: string;
+			relevantFlightParams: {
+				skyId: string;
+				entityId: string;
+				flightPlaceType: string;
+				localizedName: string;
+			};
+		};
+	}>;
 }
 
 interface APIResponse {
@@ -166,7 +183,20 @@ export const flightService = {
 				throw new Error("Failed to fetch airports");
 			}
 
-			return response.data.data.places;
+			return response.data.data.map((item) => ({
+				id: item.entityId,
+				name: item.presentation.title,
+				displayCode: item.skyId,
+				city: item.navigation.localizedName,
+				parent: item.presentation.subtitle
+					? {
+							id: item.navigation.entityId,
+							name: item.presentation.subtitle,
+							displayCode: item.skyId,
+							type: item.navigation.entityType,
+					  }
+					: undefined,
+			}));
 		} catch (error: any) {
 			if (error.response?.data?.message) {
 				const message = Array.isArray(error.response.data.message)
