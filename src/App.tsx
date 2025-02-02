@@ -17,7 +17,7 @@ function AppContent() {
 	const { theme } = useTheme();
 	const isDark = theme === "dark";
 	const [activeSection, setActiveSection] = useState<Section>("Flights");
-	const [flights, setFlights] = useState<Flight[]>([]);
+	const [flights, setFlights] = useState<Flight[] | undefined>(undefined);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | undefined>();
 

@@ -5,7 +5,7 @@ import { ArrowRight, Info, Plane } from "lucide-react";
 import { type Flight } from "../Services/flightService";
 
 interface FlightResultsProps {
-	flights: Flight[];
+	flights?: Flight[];
 	isLoading: boolean;
 	error?: string;
 }
@@ -36,7 +36,7 @@ export const FlightResults: React.FC<FlightResultsProps> = ({ flights, isLoading
 		);
 	}
 
-	if (!flights?.length) {
+	if (flights && !flights?.length) {
 		return (
 			<div className='mt-8'>
 				<div className={`p-4 rounded-lg ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-50 text-gray-600"}`}>
@@ -58,7 +58,7 @@ export const FlightResults: React.FC<FlightResultsProps> = ({ flights, isLoading
 
 	return (
 		<div className='mt-8 space-y-4'>
-			{flights.map((flight) => (
+			{flights?.map((flight) => (
 				<motion.div
 					key={flight.id}
 					initial={{ opacity: 0, y: 20 }}

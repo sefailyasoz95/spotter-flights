@@ -282,7 +282,11 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 					transition={{ delay: 0.4 }}
 					className='p-6 space-y-6'>
 					<div className='grid grid-cols-1 md:grid-cols-[1fr,auto,1fr] gap-6 items-center'>
-						<motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+						<motion.div
+							initial={{ opacity: 0, x: -20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ delay: 0.5 }}
+							className='relative'>
 							<label className={`block text-xs mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>From</label>
 							<input
 								type='text'
@@ -297,7 +301,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 							/>
 							{fromSuggestions?.length > 0 && (
 								<div
-									className={`absolute z-10 w-full mt-1 rounded-lg shadow-lg ${
+									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg ${
 										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
 									}`}>
 									{fromSuggestions.map((airport) => (
@@ -343,7 +347,11 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 							<ArrowLeftRight className='w-4 h-4' />
 						</motion.button>
 
-						<motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+						<motion.div
+							initial={{ opacity: 0, x: 20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ delay: 0.5 }}
+							className='relative'>
 							<label className={`block text-xs mb-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>To</label>
 							<input
 								type='text'
@@ -358,7 +366,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 							/>
 							{toSuggestions?.length > 0 && (
 								<div
-									className={`absolute z-10 w-full mt-1 rounded-lg shadow-lg ${
+									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg ${
 										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
 									}`}>
 									{toSuggestions.map((airport) => (
