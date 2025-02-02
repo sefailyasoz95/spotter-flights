@@ -1,5 +1,5 @@
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "../Context/ThemeContext";
 import { Minus, Plus } from "lucide-react";
 
@@ -13,175 +13,132 @@ interface PassengerSelectProps {
 	isOpen: boolean;
 	onClose: () => void;
 	passengers: PassengerCount;
-	onChange: (newPassengers: PassengerCount) => void;
+	onChange: (passengers: PassengerCount) => void;
 }
 
-export function PassengerSelect({ isOpen, onClose, passengers, onChange }: PassengerSelectProps) {
+export const PassengerSelect: React.FC<PassengerSelectProps> = ({ isOpen, onClose, passengers, onChange }) => {
 	const { theme } = useTheme();
 	const isDark = theme === "dark";
 
-	const updatePassengers = (type: keyof PassengerCount, increment: boolean) => {
+	const handleChange = (type: keyof PassengerCount, value: number) => {
 		const newPassengers = { ...passengers };
-		if (increment) {
-			if (type === "adults" && newPassengers.adults < 9) {
-				newPassengers.adults += 1;
-			} else if (type === "children" && newPassengers.children < 9) {
-				newPassengers.children += 1;
-			} else if (type === "infants" && newPassengers.infants < 4) {
-				newPassengers.infants += 1;
-			}
-		} else {
-			if (type === "adults" && newPassengers.adults > 1) {
-				newPassengers.adults -= 1;
-			} else if (type === "children" && newPassengers.children > 0) {
-				newPassengers.children -= 1;
-			} else if (type === "infants" && newPassengers.infants > 0) {
-				newPassengers.infants -= 1;
-			}
+
+		// Apply the change
+		newPassengers[type] = Math.max(0, value);
+
+		// Ensure at least one adult
+		if (type === "adults") {
+			newPassengers.adults = Math.max(1, newPassengers.adults);
 		}
-		onChange(newPassengers);
+
+		// Calculate total passengers
+		const total = newPassengers.adults + newPassengers.children + newPassengers.infants;
+
+		// Only apply changes if within limits
+		if (total <= 9 && newPassengers.infants <= newPassengers.adults) {
+			onChange(newPassengers);
+		}
 	};
 
-	const CounterButton = ({
-		onClick,
-		icon: Icon,
-		disabled,
-	}: {
-		onClick: () => void;
-		icon: typeof Plus | typeof Minus;
-		disabled?: boolean;
-	}) => (
-		<motion.button
-			whileHover={disabled ? {} : { scale: 1.1 }}
-			whileTap={disabled ? {} : { scale: 0.9 }}
-			onClick={onClick}
-			disabled={disabled}
-			className={`p-1.5 rounded-full transition-colors ${
-				disabled
-					? `${isDark ? "text-gray-600" : "text-gray-300"} cursor-not-allowed`
-					: `${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-800"}`
-			}`}>
-			<Icon className='w-4 h-4' />
-		</motion.button>
-	);
+	if (!isOpen) return null;
 
 	return (
-		<AnimatePresence>
-			{isOpen && (
-				<>
-					{/* Backdrop */}
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						onClick={onClose}
-						className='fixed inset-0 z-40'
-					/>
+		<motion.div
+			initial={{ opacity: 0, y: -10 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -10 }}
+			className={`absolute top-full left-0 right-0 mt-2 p-4 rounded-lg shadow-lg z-50 ${
+				isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+			}`}>
+			{/* Adults */}
+			<div className='flex items-center justify-between mb-4'>
+				<div>
+					<div className={`font-medium ${isDark ? "text-gray-200" : "text-gray-700"}`}>Adults</div>
+					<div className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Age 12+</div>
+				</div>
+				<div className='flex items-center gap-3'>
+					<button
+						type='button'
+						onClick={() => handleChange("adults", passengers.adults - 1)}
+						className={`p-1 rounded-full ${
+							isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+						} transition-colors disabled:opacity-50`}
+						disabled={passengers.adults <= 1}>
+						<Minus className='w-4 h-4' />
+					</button>
+					<span className={`w-6 text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}>{passengers.adults}</span>
+					<button
+						type='button'
+						onClick={() => handleChange("adults", passengers.adults + 1)}
+						className={`p-1 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"} transition-colors`}
+						disabled={getTotalPassengers() >= 9}>
+						<Plus className='w-4 h-4' />
+					</button>
+				</div>
+			</div>
 
-					{/* Dropdown panel */}
-					<motion.div
-						initial={{ opacity: 0, y: -10 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: -10 }}
-						className={`absolute right-0 mt-2 w-72 rounded-lg shadow-lg z-50 ${
-							isDark ? "bg-[#1e2330] border border-gray-700" : "bg-white border border-gray-200"
-						}`}>
-						<div className='divide-y divide-gray-700'>
-							{/* Adults */}
-							<div className='p-4'>
-								<div className='flex items-center justify-between'>
-									<div>
-										<p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>Adults</p>
-										<p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Age 12+</p>
-									</div>
-									<div className='flex items-center space-x-4'>
-										<CounterButton
-											icon={Minus}
-											onClick={() => updatePassengers("adults", false)}
-											disabled={passengers.adults <= 1}
-										/>
-										<span
-											className={`text-sm font-medium min-w-[1ch] text-center ${
-												isDark ? "text-white" : "text-gray-900"
-											}`}>
-											{passengers.adults}
-										</span>
-										<CounterButton
-											icon={Plus}
-											onClick={() => updatePassengers("adults", true)}
-											disabled={passengers.adults >= 9}
-										/>
-									</div>
-								</div>
-							</div>
+			{/* Children */}
+			<div className='flex items-center justify-between mb-4'>
+				<div>
+					<div className={`font-medium ${isDark ? "text-gray-200" : "text-gray-700"}`}>Children</div>
+					<div className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Ages 2-11</div>
+				</div>
+				<div className='flex items-center gap-3'>
+					<button
+						type='button'
+						onClick={() => handleChange("children", passengers.children - 1)}
+						className={`p-1 rounded-full ${
+							isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+						} transition-colors disabled:opacity-50`}
+						disabled={passengers.children <= 0}>
+						<Minus className='w-4 h-4' />
+					</button>
+					<span className={`w-6 text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}>{passengers.children}</span>
+					<button
+						type='button'
+						onClick={() => handleChange("children", passengers.children + 1)}
+						className={`p-1 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"} transition-colors`}
+						disabled={getTotalPassengers() >= 9}>
+						<Plus className='w-4 h-4' />
+					</button>
+				</div>
+			</div>
 
-							{/* Children */}
-							<div className='p-4'>
-								<div className='flex items-center justify-between'>
-									<div>
-										<p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>Children</p>
-										<p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Ages 2-11</p>
-									</div>
-									<div className='flex items-center space-x-4'>
-										<CounterButton
-											icon={Minus}
-											onClick={() => updatePassengers("children", false)}
-											disabled={passengers.children <= 0}
-										/>
-										<span
-											className={`text-sm font-medium min-w-[1ch] text-center ${
-												isDark ? "text-white" : "text-gray-900"
-											}`}>
-											{passengers.children}
-										</span>
-										<CounterButton
-											icon={Plus}
-											onClick={() => updatePassengers("children", true)}
-											disabled={passengers.children >= 9}
-										/>
-									</div>
-								</div>
-							</div>
+			{/* Infants */}
+			<div className='flex items-center justify-between'>
+				<div>
+					<div className={`font-medium ${isDark ? "text-gray-200" : "text-gray-700"}`}>Infants</div>
+					<div className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Under 2</div>
+				</div>
+				<div className='flex items-center gap-3'>
+					<button
+						type='button'
+						onClick={() => handleChange("infants", passengers.infants - 1)}
+						className={`p-1 rounded-full ${
+							isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+						} transition-colors disabled:opacity-50`}
+						disabled={passengers.infants <= 0}>
+						<Minus className='w-4 h-4' />
+					</button>
+					<span className={`w-6 text-center ${isDark ? "text-gray-200" : "text-gray-700"}`}>{passengers.infants}</span>
+					<button
+						type='button'
+						onClick={() => handleChange("infants", passengers.infants + 1)}
+						className={`p-1 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"} transition-colors`}
+						disabled={passengers.infants >= passengers.adults || getTotalPassengers() >= 9}>
+						<Plus className='w-4 h-4' />
+					</button>
+				</div>
+			</div>
 
-							{/* Infants */}
-							<div className='p-4'>
-								<div className='flex items-center justify-between'>
-									<div>
-										<p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>Infants</p>
-										<p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Under 2</p>
-									</div>
-									<div className='flex items-center space-x-4'>
-										<CounterButton
-											icon={Minus}
-											onClick={() => updatePassengers("infants", false)}
-											disabled={passengers.infants <= 0}
-										/>
-										<span
-											className={`text-sm font-medium min-w-[1ch] text-center ${
-												isDark ? "text-white" : "text-gray-900"
-											}`}>
-											{passengers.infants}
-										</span>
-										<CounterButton
-											icon={Plus}
-											onClick={() => updatePassengers("infants", true)}
-											disabled={passengers.infants >= 4}
-										/>
-									</div>
-								</div>
-							</div>
-
-							{/* Info section */}
-							<div className='p-4'>
-								<div className={`text-xs space-y-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-									<p>• Maximum 9 passengers per booking</p>
-									<p>• Maximum 4 infants per booking</p>
-								</div>
-							</div>
-						</div>
-					</motion.div>
-				</>
-			)}
-		</AnimatePresence>
+			<div className={`mt-4 text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+				* Maximum 9 passengers per booking
+				<br />* Maximum 1 infant per adult
+			</div>
+		</motion.div>
 	);
-}
+
+	function getTotalPassengers() {
+		return passengers.adults + passengers.children + passengers.infants;
+	}
+};

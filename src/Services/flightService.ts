@@ -96,12 +96,14 @@ export interface Flight {
 			name: string;
 			displayCode: string;
 			city: string;
+			country: string;
 		};
 		destination: {
 			id: string;
 			name: string;
 			displayCode: string;
 			city: string;
+			country: string;
 		};
 		durationInMinutes: number;
 		stopCount: number;
@@ -111,10 +113,60 @@ export interface Flight {
 		carriers: {
 			marketing: Array<{
 				id: number;
+				alternateId: string;
+				logoUrl: string;
+				name: string;
+			}>;
+			operating: Array<{
+				id: number;
+				alternateId: string;
 				logoUrl: string;
 				name: string;
 			}>;
 		};
+		segments: Array<{
+			id: string;
+			origin: {
+				flightPlaceId: string;
+				displayCode: string;
+				name: string;
+				type: string;
+				country: string;
+				parent?: {
+					flightPlaceId: string;
+					displayCode: string;
+					name: string;
+					type: string;
+				};
+			};
+			destination: {
+				flightPlaceId: string;
+				displayCode: string;
+				name: string;
+				type: string;
+				country: string;
+				parent?: {
+					flightPlaceId: string;
+					displayCode: string;
+					name: string;
+					type: string;
+				};
+			};
+			departure: string;
+			arrival: string;
+			durationInMinutes: number;
+			flightNumber: string;
+			marketingCarrier: {
+				id: number;
+				name: string;
+				alternateId: string;
+			};
+			operatingCarrier: {
+				id: number;
+				name: string;
+				alternateId: string;
+			};
+		}>;
 	}>;
 	tags: string[];
 }

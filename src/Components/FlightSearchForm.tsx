@@ -58,6 +58,10 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 	const [toSuggestions, setToSuggestions] = useState<Airport[]>([]);
 	const [selectedFrom, setSelectedFrom] = useState<Airport | null>(null);
 	const [selectedTo, setSelectedTo] = useState<Airport | null>(null);
+	const [fromSearchLoading, setFromSearchLoading] = useState(false);
+	const [toSearchLoading, setToSearchLoading] = useState(false);
+	const [isSelectingFrom, setIsSelectingFrom] = useState(false);
+	const [isSelectingTo, setIsSelectingTo] = useState(false);
 
 	const passengerSelectRef = useRef<HTMLDivElement>(null);
 	const cabinClassRef = useRef<HTMLDivElement>(null);
@@ -99,13 +103,16 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 
 	useEffect(() => {
 		const searchAirports = async () => {
-			if (debouncedFromQuery.length >= 2) {
+			if (debouncedFromQuery.length >= 2 && !isSelectingFrom) {
+				setFromSearchLoading(true);
 				try {
 					const airports = await flightService.searchAirports(debouncedFromQuery);
 					setFromSuggestions(airports);
 				} catch (error) {
 					console.error("Error searching airports:", error);
 					setFromSuggestions([]);
+				} finally {
+					setFromSearchLoading(false);
 				}
 			} else {
 				setFromSuggestions([]);
@@ -113,17 +120,20 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 		};
 
 		searchAirports();
-	}, [debouncedFromQuery]);
+	}, [debouncedFromQuery, isSelectingFrom]);
 
 	useEffect(() => {
 		const searchAirports = async () => {
-			if (debouncedToQuery.length >= 2) {
+			if (debouncedToQuery.length >= 2 && !isSelectingTo) {
+				setToSearchLoading(true);
 				try {
 					const airports = await flightService.searchAirports(debouncedToQuery);
 					setToSuggestions(airports);
 				} catch (error) {
 					console.error("Error searching airports:", error);
 					setToSuggestions([]);
+				} finally {
+					setToSearchLoading(false);
 				}
 			} else {
 				setToSuggestions([]);
@@ -131,21 +141,49 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 		};
 
 		searchAirports();
-	}, [debouncedToQuery]);
+	}, [debouncedToQuery, isSelectingTo]);
 
 	const handleFromSearch = (value: string) => {
+		setIsSelectingFrom(false);
 		setFrom(value);
 	};
 
 	const handleToSearch = (value: string) => {
+		setIsSelectingTo(false);
 		setTo(value);
 	};
 
 	const handleSearch = async (e: React.FormEvent) => {
 		e.preventDefault();
 
+		// Validate required fields
 		if (!selectedFrom || !selectedTo || !departDate) {
 			toast.error("Please fill in all required fields");
+			return;
+		}
+
+		// Validate dates for round trip
+		if (tripType === "roundTrip") {
+			if (!returnDate) {
+				toast.error("Please select a return date");
+				return;
+			}
+
+			if (returnDate < departDate) {
+				toast.error("Return date cannot be before departure date");
+				return;
+			}
+		}
+
+		// Validate passenger count
+		const totalPassengers = passengers.adults + passengers.children + passengers.infants;
+		if (totalPassengers > 9) {
+			toast.error("Maximum 9 passengers allowed per booking");
+			return;
+		}
+
+		if (passengers.infants > passengers.adults) {
+			toast.error("Number of infants cannot exceed number of adults");
 			return;
 		}
 
@@ -158,12 +196,12 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 			const flights = await flightService.searchFlights({
 				origin: selectedFrom,
 				destination: selectedTo,
-				departureDate: departDate.toISOString().split("T")[0],
-				returnDate: returnDate?.toISOString().split("T")[0],
+				departureDate: formatDate(departDate),
+				returnDate: returnDate ? formatDate(returnDate) : undefined,
 				adults: passengers.adults,
 				children: passengers.children,
 				infants: passengers.infants,
-				cabinClass: "ECONOMY",
+				cabinClass: cabinClass.toUpperCase() as "ECONOMY" | "BUSINESS" | "FIRST",
 			});
 
 			onSearch(flights);
@@ -185,6 +223,18 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 		setFromSuggestions([]);
 		setToSuggestions([]);
 	};
+
+	const handleTripTypeChange = (type: "roundTrip" | "oneWay") => {
+		setTripType(type);
+		if (type === "oneWay") {
+			setReturnDate(undefined);
+		}
+	};
+
+	const handlePassengerSelectToggle = () => {
+		setIsPassengerSelectOpen(!isPassengerSelectOpen);
+	};
+
 	console.log("fromSuggestions: ", fromSuggestions);
 
 	return (
@@ -206,7 +256,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 							type='button'
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => setTripType("roundTrip")}
+							onClick={() => handleTripTypeChange("roundTrip")}
 							className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
 								tripType === "roundTrip"
 									? `${isDark ? "bg-blue-500 text-white" : "bg-blue-500 text-white"}`
@@ -222,7 +272,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 							type='button'
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => setTripType("oneWay")}
+							onClick={() => handleTripTypeChange("oneWay")}
 							className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
 								tripType === "oneWay"
 									? `${isDark ? "bg-blue-500 text-white" : "bg-blue-500 text-white"}`
@@ -240,7 +290,8 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 					<div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
 						<div className='relative' ref={passengerSelectRef}>
 							<button
-								onClick={() => setIsPassengerSelectOpen(!isPassengerSelectOpen)}
+								type='button'
+								onClick={handlePassengerSelectToggle}
 								className={`w-full py-2.5 px-4 rounded-lg text-sm text-left flex items-center justify-between ${
 									isDark
 										? "bg-[#1e2330] text-gray-300 hover:bg-[#252b3b]"
@@ -299,7 +350,18 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 										: "border-gray-300 hover:border-gray-400 text-gray-800 placeholder-gray-400"
 								} focus:border-blue-500 outline-none text-sm py-2.5 transition-colors`}
 							/>
-							{fromSuggestions?.length > 0 && (
+							{fromSearchLoading && from.length >= 2 && (
+								<div
+									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg p-4 ${
+										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+									}`}>
+									<div className='flex items-center justify-center'>
+										<div className='animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500'></div>
+										<span className='ml-2 text-sm text-gray-500'>Searching airports...</span>
+									</div>
+								</div>
+							)}
+							{!fromSearchLoading && fromSuggestions?.length > 0 && (
 								<div
 									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg ${
 										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
@@ -312,6 +374,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 												isDark ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-700"
 											}`}
 											onClick={() => {
+												setIsSelectingFrom(true);
 												setFrom(`${airport.city || airport.name} (${airport.displayCode})`);
 												setSelectedFrom(airport);
 												setFromSuggestions([]);
@@ -364,7 +427,18 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 										: "border-gray-300 hover:border-gray-400 text-gray-800 placeholder-gray-400"
 								} focus:border-blue-500 outline-none text-sm py-2.5 transition-colors`}
 							/>
-							{toSuggestions?.length > 0 && (
+							{toSearchLoading && to.length >= 2 && (
+								<div
+									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg p-4 ${
+										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
+									}`}>
+									<div className='flex items-center justify-center'>
+										<div className='animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500'></div>
+										<span className='ml-2 text-sm text-gray-500'>Searching airports...</span>
+									</div>
+								</div>
+							)}
+							{!toSearchLoading && toSuggestions?.length > 0 && (
 								<div
 									className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg ${
 										isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
@@ -377,6 +451,7 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 												isDark ? "hover:bg-gray-700 text-gray-200" : "hover:bg-gray-100 text-gray-700"
 											}`}
 											onClick={() => {
+												setIsSelectingTo(true);
 												setTo(`${airport.city || airport.name} (${airport.displayCode})`);
 												setSelectedTo(airport);
 												setToSuggestions([]);
