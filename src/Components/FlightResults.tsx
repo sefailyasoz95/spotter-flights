@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useTheme } from "../Context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Info, Plane, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
+import { Info, Plane, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
 import { type Flight } from "../Services/flightService";
 
 interface FlightResultsProps {

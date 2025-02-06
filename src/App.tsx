@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import FlightSearchForm from "./Components/FlightSearchForm";
 import { ThemeProvider } from "./Context/ThemeContext";
 import { Header } from "./Components/Header";

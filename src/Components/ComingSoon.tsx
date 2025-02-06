@@ -1,4 +1,3 @@
-import React from "react";
 import { useTheme } from "../Context/ThemeContext";
 import Lottie from "lottie-react";
 import flightAnimation from "../Assets/Animations/flight-animation.json";

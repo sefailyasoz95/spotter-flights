@@ -1,4 +1,3 @@
-import React from "react";
 import { useTheme } from "../Context/ThemeContext";
 import { motion } from "framer-motion";
 import { Plane } from "lucide-react";

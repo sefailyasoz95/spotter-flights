@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowRightLeft, Search, Users, ArrowLeftRight } from "lucide-react";
+import { Search, Users, ArrowLeftRight } from "lucide-react";
 import { DatePicker } from "./DatePicker";
 import { useTheme } from "../Context/ThemeContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
@@ -7,8 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PassengerSelect } from "./PassengerSelect";
 import { useOnClickOutside } from "../Hooks/useOnClickOutside";
 import { toast } from "sonner";
-import { FlightResults } from "./FlightResults";
-import { type Flight } from "../Services/flightService";
 import { flightService } from "../Services/flightService";
 import { useDebounce } from "../Hooks/useDebounce";
 
@@ -91,14 +89,6 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 		if (passengers.infants > 0) details.push(`${passengers.infants} Infant${passengers.infants !== 1 ? "s" : ""}`);
 
 		return `${total} Passenger${total !== 1 ? "s" : ""} (${details.join(", ")})`;
-	};
-
-	const validateDates = (date: Date) => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const selectedDate = new Date(date);
-		selectedDate.setHours(0, 0, 0, 0);
-		return selectedDate >= today;
 	};
 
 	useEffect(() => {
@@ -234,8 +224,6 @@ const FlightSearchForm = ({ onSearch, setIsLoading, setError }: FlightSearchForm
 	const handlePassengerSelectToggle = () => {
 		setIsPassengerSelectOpen(!isPassengerSelectOpen);
 	};
-
-	console.log("fromSuggestions: ", fromSuggestions);
 
 	return (
 		<motion.div
